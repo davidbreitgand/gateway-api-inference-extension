@@ -17,8 +17,10 @@ limitations under the License.
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"os"
 
 	basepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	eppb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
@@ -41,6 +43,14 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 
 	var requestBody RequestBody
 	if err := json.Unmarshal(requestBodyBytes, &requestBody); err != nil {
+		metrics.RecordModelNotParsedCounter()
+		return nil, err
+	}
+
+	//The reason for this additional unmarshal is that I change the model name and then re-marshal RequestBody struct. But it has only one field, and I need to preserve original message at re-marshalling.
+	//This can be done more efficiently if a full "official" struct by OpenAI is used. In OpenAI v2 it should be ChatCompletionNewParams
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(requestBodyBytes, &raw); err != nil {
 		metrics.RecordModelNotParsedCounter()
 		return nil, err
 	}
@@ -68,6 +78,48 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 
 	metrics.RecordSuccessCounter()
 
+	//Mutate model name if it contains reserved keyword "lora" indicating that the requested model is lora (served from the same vLLM as the base model and from the same inferencepool)
+	//Convention: [model-family]/<model-name>/lora/<lora-name>
+	//Model name definition (the vLLM side) does not change: <my-arbitrary-lora-name>
+	//Model name in request (the client side): lora-name (no change from before)
+	loraTag := os.Getenv("LORA_TAG") //set via environment
+	if loraTag == "" {
+		loraTag = "lora"
+	}
+
+	orig := []byte(requestBody.Model)
+	prefix := []byte(requestBody.Model)
+	var suffix []byte
+
+	logger.V(logutil.DEFAULT).Info("Orig: " + string(orig))
+
+	if idx := bytes.Index(orig, []byte(loraTag)); idx != -1 {
+		lastSlash := bytes.LastIndex(orig[:idx], []byte("/"))
+		if lastSlash != -1 {
+			afterTag := orig[idx+len(loraTag):]             // slice after "lora"
+			nextSlash := bytes.Index(afterTag, []byte("/")) // index relative to afterTag
+			if nextSlash != -1 {
+				prefix = orig[:lastSlash] // safe: based on orig
+				// skip the slash itself by adding +1 so suffix doesn't start with '/'
+				suffix = afterTag[nextSlash+1:]
+				logger.V(logutil.DEFAULT).Info("Model name after mutation:" + string(suffix))
+				requestBody.Model = string(suffix)
+				// update only the "model" field in the original raw map so other fields (e.g. prompt) are preserved
+				modelBytes, merr := json.Marshal(requestBody.Model)
+				if merr != nil {
+					logger.V(logutil.DEFAULT).Info("failed to marshal new model value: " + merr.Error())
+				} else {
+					raw["model"] = json.RawMessage(modelBytes)
+					if updatedBodyBytes, merr2 := json.Marshal(raw); merr2 != nil {
+						logger.V(logutil.DEFAULT).Info("failed to marshal updated request body: " + merr2.Error())
+					} else {
+						requestBodyBytes = updatedBodyBytes
+					}
+				}
+			}
+		}
+	}
+
 	if s.streaming {
 		ret = append(ret, &eppb.ProcessingResponse{
 			Response: &eppb.ProcessingResponse_RequestHeaders{
@@ -78,8 +130,9 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 							SetHeaders: []*basepb.HeaderValueOption{
 								{
 									Header: &basepb.HeaderValue{
-										Key:      modelHeader,
-										RawValue: []byte(requestBody.Model),
+										Key: modelHeader,
+										//RawValue: []byte(requestBody.Model),
+										RawValue: prefix,
 									},
 								},
 							},
@@ -103,8 +156,9 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 							SetHeaders: []*basepb.HeaderValueOption{
 								{
 									Header: &basepb.HeaderValue{
-										Key:      modelHeader,
-										RawValue: []byte(requestBody.Model),
+										Key: modelHeader,
+										//RawValue: []byte(requestBody.Model),
+										RawValue: prefix,
 									},
 								},
 							},

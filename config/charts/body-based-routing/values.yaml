@@ -4,8 +4,10 @@ bbr:
   image:
     name: bbr
     hub: us-central1-docker.pkg.dev/k8s-staging-images/gateway-api-inference-extension
-    tag: main
-    pullPolicy: Always
+    #tag: main
+    tag: 309637b-dirty #output of git describe --tags --dirty --always
+    #pullPolicy: Always
+    pullPolicy: IfNotPresent #for local development; because the image is on kind
   port: 9004
   healthCheckPort: 9005
 

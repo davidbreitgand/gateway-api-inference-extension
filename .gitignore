@@ -33,3 +33,9 @@ site
 
 # MacOS generated files
 **/.DS_Store
+
+#archives
+*.gz
+
+#binaries
+istioctl
