@@ -11,7 +11,7 @@ spec:
       - type: Exact
         #Body-Based routing(https://github.com/kubernetes-sigs/gateway-api-inference-extension/blob/main/pkg/bbr/README.md) is being used to copy the model name from the request body to the header.
         name: X-Gateway-Model-Name
-        value: meta-llama/Llama-3.1-8B-Instruct
+        value: 'meta-llama/Llama-3.1-8B-Instruct'
       path:
         type: PathPrefix
         value: /
@@ -23,7 +23,7 @@ spec:
     - headers:
       - type: Exact
         name: X-Gateway-Model-Name 
-        value: deepseek/deepseek-r1
+        value: 'deepseek/deepseek-r1'
       path:
         type: PathPrefix
         value: /
