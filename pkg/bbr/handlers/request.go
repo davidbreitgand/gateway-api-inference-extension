@@ -30,25 +30,16 @@ import (
 
 const modelHeader = "X-Gateway-Model-Name"
 
-//type RequestBody struct {
-//	Model string `json:"model"`
-//}
-
 // HandleRequestBody handles request bodies.
 func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte) ([]*eppb.ProcessingResponse, error) {
 	logger := log.FromContext(ctx)
 	var ret []*eppb.ProcessingResponse
 
-	//var requestBody RequestBody
 	var requestBody openai.ChatCompletionNewParams
 	if err := requestBody.UnmarshalJSON(requestBodyBytes); err != nil {
 		metrics.RecordModelNotParsedCounter()
 		return nil, err
 	}
-	//if err := json.Unmarshal(requestBodyBytes, &requestBody); err != nil {
-	//	metrics.RecordModelNotParsedCounter()
-	//	return nil, err
-	//}
 
 	if requestBody.Model == "" {
 		metrics.RecordModelNotInBodyCounter()
