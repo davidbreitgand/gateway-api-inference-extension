@@ -26,6 +26,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	bbrplugins "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework/plugins"
+	bbrutils "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework/utils"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/epp/util/logging"
 )
 
@@ -58,7 +60,7 @@ func TestProcessRequestBody(t *testing.T) {
 									SetHeaders: []*basepb.HeaderValueOption{
 										{
 											Header: &basepb.HeaderValue{
-												Key:      modelHeader,
+												Key:      bbrplugins.ModelHeader,
 												RawValue: []byte("foo"),
 											},
 										},
@@ -93,7 +95,7 @@ func TestProcessRequestBody(t *testing.T) {
 									SetHeaders: []*basepb.HeaderValueOption{
 										{
 											Header: &basepb.HeaderValue{
-												Key:      modelHeader,
+												Key:      bbrplugins.ModelHeader,
 												RawValue: []byte("foo"),
 											},
 										},
@@ -125,9 +127,13 @@ func TestProcessRequestBody(t *testing.T) {
 		},
 	}
 
+	//Initialize PluginRegistry and request/response PluginsChain instances
+	registry, requestChain, responseChain, metaDataKeys, _ := bbrutils.InitPlugins()
+
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			srv := NewServer(tc.streaming)
+			srv := NewServer(tc.streaming, *registry, *requestChain, *responseChain, metaDataKeys)
+			//srv := NewServer(tc.streaming)
 			streamedBody := &streamedBody{}
 			for i, body := range tc.bodys {
 				got, err := srv.processRequestBody(context.Background(), body, streamedBody, log.FromContext(ctx))

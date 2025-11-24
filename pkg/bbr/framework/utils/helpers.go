@@ -14,17 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
-import (
-	"os"
-
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/gateway-api-inference-extension/cmd/bbr/runner"
-)
-
-func main() {
-	if err := runner.NewRunner().Run(ctrl.SetupSignalHandler()); err != nil {
-		os.Exit(1)
+// MergeMaps copies all key/value pairs from src into dst and returns dst.
+// If dst is nil a new map is allocated.
+func MergeMaps(dst map[string]string, src map[string]string) map[string]string {
+	if src == nil {
+		if dst == nil {
+			return map[string]string{}
+		}
+		return dst
 	}
+	if dst == nil {
+		dst = make(map[string]string, len(src))
+	}
+
+	for k, v := range src {
+		if _, exists := dst[k]; !exists {
+			dst[k] = v
+		}
+	}
+
+	return dst
 }

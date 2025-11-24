@@ -102,8 +102,20 @@ func (r *Runner) Run(ctx context.Context) error {
 		return err
 	}
 
+	//Initialize PluginRegistry and request/response PluginsChain instances
+	registry, requestChain, responseChain, metaDataKeys, err := bbrutils.InitPlugins()
+	if err != nil {
+		setupLog.Error(err, "Failed to initialize plugins")
+		return err
+	}
+
 	// Setup runner.
-	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort, *streaming)
+	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort,
+		*streaming,
+		*registry,
+		*requestChain,
+		*responseChain,
+		metaDataKeys)
 
 	// Register health server.
 	if err := registerHealthServer(mgr, *grpcHealthPort); err != nil {

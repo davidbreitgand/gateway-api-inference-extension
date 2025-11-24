@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 
 	extProcPb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"github.com/go-logr/logr"
@@ -27,18 +28,35 @@ import (
 	"google.golang.org/grpc/status"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/epp/util/logging"
 	requtil "sigs.k8s.io/gateway-api-inference-extension/pkg/epp/util/request"
 )
 
-func NewServer(streaming bool) *Server {
-	return &Server{streaming: streaming}
+func NewServer(streaming bool,
+	reg framework.PluginRegistry,
+	reqChain framework.PluginsChain,
+	respChain framework.PluginsChain,
+	metaDataKeys []string) *Server {
+	return &Server{
+		streaming:     streaming,
+		registry:      reg,
+		requestChain:  reqChain,
+		responseChain: respChain,
+		endpoint:      "", //will be known upon receiving a request
+		metaDataKeys:  metaDataKeys,
+	}
 }
 
 // Server implements the Envoy external processing server.
 // https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto
 type Server struct {
-	streaming bool
+	streaming     bool
+	registry      framework.PluginRegistry
+	requestChain  framework.PluginsChain
+	responseChain framework.PluginsChain
+	endpoint      string //holds endpoint path of an incoming openai request (extracted from an envoy :path pseudo-header)
+	metaDataKeys  []string
 }
 
 func (s *Server) Process(srv extProcPb.ExternalProcessor_ProcessServer) error {
@@ -68,6 +86,12 @@ func (s *Server) Process(srv extProcPb.ExternalProcessor_ProcessServer) error {
 		var err error
 		switch v := req.Request.(type) {
 		case *extProcPb.ProcessingRequest_RequestHeaders:
+			//identify the endpoint type (later to be used to select a proper struct into which to parse the body)
+			for _, h := range v.RequestHeaders.Headers.Headers {
+				if strings.ToLower(h.Key) == ":path" {
+					s.endpoint = h.Value // e.g., "/v1/completions" or "/v1/chat/completions"
+				}
+			}
 			if s.streaming && !req.GetRequestHeaders().GetEndOfStream() {
 				// If streaming and the body is not empty, then headers are handled when processing request body.
 				loggerVerbose.Info("Received headers, passing off header processing until body arrives...")
