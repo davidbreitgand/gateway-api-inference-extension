@@ -29,21 +29,30 @@ import (
 
 	"sigs.k8s.io/gateway-api-inference-extension/internal/runnable"
 	tlsutil "sigs.k8s.io/gateway-api-inference-extension/internal/tls"
+	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/handlers"
 )
 
 // ExtProcServerRunner provides methods to manage an external process server.
 type ExtProcServerRunner struct {
-	GrpcPort      int
-	SecureServing bool
-	Streaming     bool
+	GrpcPort             int
+	SecureServing        bool
+	Streaming            bool
+	registry             framework.PluginRegistry
+	requestPluginsChain  framework.PluginsChain
+	responsePluginsChain framework.PluginsChain
+	metaDataKeys         []string
 }
 
-func NewDefaultExtProcServerRunner(port int, streaming bool) *ExtProcServerRunner {
+func NewDefaultExtProcServerRunner(port int, streaming bool, r framework.PluginRegistry, reqChain framework.PluginsChain, respChain framework.PluginsChain, metaDataKeys []string) *ExtProcServerRunner {
 	return &ExtProcServerRunner{
-		GrpcPort:      port,
-		SecureServing: true,
-		Streaming:     streaming,
+		GrpcPort:             port,
+		SecureServing:        true,
+		Streaming:            streaming,
+		registry:             r,
+		requestPluginsChain:  reqChain,
+		responsePluginsChain: respChain,
+		metaDataKeys:         metaDataKeys,
 	}
 }
 
@@ -65,7 +74,7 @@ func (r *ExtProcServerRunner) AsRunnable(logger logr.Logger) manager.Runnable {
 
 		extProcPb.RegisterExternalProcessorServer(
 			srv,
-			handlers.NewServer(r.Streaming),
+			handlers.NewServer(r.Streaming, r.registry, r.requestPluginsChain, r.responsePluginsChain, r.metaDataKeys),
 		)
 
 		// Forward to the gRPC runnable.

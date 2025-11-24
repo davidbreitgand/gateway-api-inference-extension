@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
 	"sigs.k8s.io/gateway-api-inference-extension/internal/runnable"
+	bbrutils "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework/utils"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/metrics"
 	runserver "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/server"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/epp/util/logging"
@@ -101,15 +101,27 @@ func run() error {
 
 	ctx := ctrl.SetupSignalHandler()
 
+	//Initialize PluginRegistry and request/response PluginsChain instances
+	registry, requestChain, responseChain, metaDataKeys, err := bbrutils.InitPlugins()
+	if err != nil {
+		setupLog.Error(err, "Failed to initialize plugins")
+		return err
+	}
+
 	// Setup runner.
-	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort, *streaming)
+	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort,
+		*streaming,
+		*registry,
+		*requestChain,
+		*responseChain,
+		metaDataKeys)
 
 	// Register health server.
 	if err := registerHealthServer(mgr, ctrl.Log.WithName("health"), *grpcHealthPort); err != nil {
 		return err
 	}
 
-	// Register ext-proc server.
+	// Register ext_proc server.
 	if err := mgr.Add(serverRunner.AsRunnable(ctrl.Log.WithName("ext-proc"))); err != nil {
 		setupLog.Error(err, "Failed to register ext-proc gRPC server")
 		return err
