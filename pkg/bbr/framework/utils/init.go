@@ -74,7 +74,7 @@ func InitPlugins() (
 	processChain := func(envVar string, chain framework.PluginsChain) error {
 		configData := os.Getenv(envVar)
 		if configData == "" {
-			return nil // no plugins defined for this chain
+			return nil // no plugins defined for this chain, but this is not an error
 		}
 
 		lines := strings.Split(configData, "\n")
@@ -143,7 +143,7 @@ func InitPlugins() (
 		if err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("failed to register factory %v", err)
 		}
-		err = processPlugin(bbrplugins.DefaultPluginType, bbrplugins.DefaultImplementation, requestChain)
+		err = processPlugin(bbrplugins.DefaultPluginType, bbrplugins.DefaultPluginImplementation, requestChain)
 
 		if err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("failed to create default MetaDataExtractor: %v", err)

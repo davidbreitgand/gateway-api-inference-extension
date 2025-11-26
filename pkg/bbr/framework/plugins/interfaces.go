@@ -28,7 +28,7 @@ const ModelHeader = "X-Gateway-Model-Name"
 // ----------------------------------------------------------------------------------------
 // ------------------------------------ Defaults ------------------------------------------
 const DefaultPluginType = "MetadataExtractor"
-const DefaultImplementation = "simple-model-selector"
+const DefaultPluginImplementation = "simple-model-selector"
 
 // BBR plugins should never mutate the body directly.
 // If the body is mutated to have an alignment with the headers wherever
