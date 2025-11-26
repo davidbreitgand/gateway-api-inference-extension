@@ -49,7 +49,8 @@ type pluginRegistry struct {
 // NewPluginRegistry creates a new instance of pluginRegistry
 func NewPluginRegistry() PluginRegistry {
 	return &pluginRegistry{
-		pluginsFactory: map[string]PluginFactoryFunc{},
+		pluginsFactory: make(map[string]PluginFactoryFunc),
+		plugins:        make(map[string]bbrplugins.BBRPlugin),
 	}
 }
 

@@ -19,4 +19,4 @@ data:
 {{- end }}
 
   METADATA_KEYS: |
-{{- join "," .Values.plugins.metaDataKeys }}
+{{ join "," .Values.plugins.metaDataKeys | nindent 4 }}

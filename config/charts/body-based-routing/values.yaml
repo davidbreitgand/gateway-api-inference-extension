@@ -20,13 +20,13 @@ plugins:
 #    - type: ModelSelector
 #      name: semantic-model-selector
     - type: MetadataExtractor 
-    - name: simple-model-extractor
+      name: simple-model-extractor
 
-#  responseChain:
+  responseChain:
 #    - type: GuardRail
 #      name: pid-disclosure-blocker
 
-metaDataKeys:
-  - model
+  metaDataKeys:
+    - model
 #  - temperature
 #  - max_tokens
