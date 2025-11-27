@@ -75,7 +75,7 @@ func InitPlugins(setupLog logr.Logger) (
 	// Helper to process plugin chains
 	processChain := func(envVar string, chain framework.PluginsChain) error {
 		configData := os.Getenv(envVar)
-		setupLog.Info("PLUGINS_CHAIN", "envVar", configData)
+		setupLog.Info("CONFIGMAP", "PluginsChain", envVar, "envVar", configData)
 		if configData == "" {
 			return nil // no plugins defined for this chain, but this is not an error
 		}
@@ -96,7 +96,7 @@ func InitPlugins(setupLog logr.Logger) (
 			implementation := strings.TrimSpace(kvPair[1])
 
 			switch {
-			case pluginType == "MetadaExtractor":
+			case pluginType == "MetadataExtractor":
 				switch {
 				case implementation == "simple-model-extractor":
 					//register factory for this plugin
@@ -132,6 +132,7 @@ func InitPlugins(setupLog logr.Logger) (
 	if err := processChain("REQUEST_PLUGINS_CHAIN", requestChain); err != nil {
 		return nil, nil, nil, nil, err
 	}
+	setupLog.Info("After processing environment vars inside InitPlugins():", "REQUEST_PLUGINS_CHAIN", requestChain)
 	if err := processChain("RESPONSE_PLUGINS_CHAIN", responseChain); err != nil {
 		return nil, nil, nil, nil, err
 	}
