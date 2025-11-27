@@ -23,11 +23,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework"
 	bbrplugins "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework/plugins"
 )
 
-func InitPlugins() (
+func InitPlugins(setupLog logr.Logger) (
 	*framework.PluginRegistry,
 	*framework.PluginsChain,
 	*framework.PluginsChain,
@@ -45,6 +46,7 @@ func InitPlugins() (
 	// If no plugin is specified for PluginsRequestChain, then, by default, there always will be specified
 	// metadata key "model" and an instance of SimpleModelExtractor of type MetaDataExtractor will be added to the RequestPluginsChain
 	metaKeysEnv := os.Getenv("METADATA_KEYS")
+	setupLog.Info("METADATA_KEYS", "metaKeysEnv", metaKeysEnv)
 	if metaKeysEnv != "" {
 		metaDataKeys = strings.Split(metaKeysEnv, ",")
 		for i := range metaDataKeys {
@@ -73,6 +75,7 @@ func InitPlugins() (
 	// Helper to process plugin chains
 	processChain := func(envVar string, chain framework.PluginsChain) error {
 		configData := os.Getenv(envVar)
+		setupLog.Info("PLUGINS_CHAIN", "envVar", configData)
 		if configData == "" {
 			return nil // no plugins defined for this chain, but this is not an error
 		}

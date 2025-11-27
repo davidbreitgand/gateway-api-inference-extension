@@ -65,7 +65,7 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 	//run plugins in requestPluginChain sequentially (correct order is user's responsibility)
 	//TODO: replace/add pluginsDAG, to allow for more sophisticated execution flow
 
-	var allHeaders = map[string]string{}
+	var allHeaders = make(map[string]string)
 
 	for i := range s.requestChain.Length() { //no need to check for errors; validations were performed earlier at various steps
 		plugin, _ := s.requestChain.GetPlugin(i, s.registry)
@@ -80,7 +80,9 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 				if err != nil {
 					return nil, err
 				}
-				helpers.MergeMaps(allHeaders, headers) //note that the existing keys are over-written; it's the
+				logger.V(logutil.DEFAULT).Info("Headers extracted: ", headers)    //TODO: remove
+				helpers.MergeMaps(allHeaders, headers)                            //note that the existing overlapping keys are over-written; it's the
+				logger.V(logutil.DEFAULT).Info("Headers extracted: ", allHeaders) //TODO: remove
 			}
 		case "ModelSelector": //potentially mutates body; even if the body is not mutated a non-empty body that equals the original body should be returned
 			if modSelect, ok := plugin.(bbrplugins.ModelSelector); ok {

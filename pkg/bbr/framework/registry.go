@@ -163,8 +163,8 @@ func (r *pluginRegistry) GetPlugins() map[string]bbrplugins.BBRPlugin {
 
 // Clear removes all registered factories and plugins
 func (r *pluginRegistry) Clear() {
-	r.pluginsFactory = map[string]PluginFactoryFunc{}
-	r.plugins = map[string]bbrplugins.BBRPlugin{}
+	r.pluginsFactory = make(map[string]PluginFactoryFunc)
+	r.plugins = make(map[string]bbrplugins.BBRPlugin)
 }
 
 // Checks for presense of a factory in this registry
@@ -184,7 +184,7 @@ func (r *pluginRegistry) ContainsPlugin(typeKey string) bool {
 // PluginsChain is a sequence of plugins to be executed in order inside the ext_proc server
 type pluginsChain struct {
 	plugins              []string
-	sharedChatCompletion openai.ChatCompletionNewParams //will be empty if an instance of pluginsChain does not contain a plugin that requires full parsing
+	sharedChatCompletion openai.ChatCompletionNewParams //will be nil if an instance of pluginsChain does not contain a plugin that requires full parsing
 	sharedCompletion     openai.CompletionNewParams     //likewise
 }
 

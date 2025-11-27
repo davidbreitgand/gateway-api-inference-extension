@@ -79,7 +79,7 @@ func (s *simpleModelExtractor) Extract(ctx context.Context,
 	metaDataKeys []string, //in this implementation, the metaDataKeys are ignored, because the plugin only extracts Model
 	sharedMemory interface{}) (headers map[string]string, err error) {
 
-	h := map[string]string{}
+	h := make(map[string]string)
 
 	defaultImpl := func() (map[string]string, error) { //the default implementation that does not use shared memory for efficiency if no other plugin uses shared memory
 		type RequestBody struct {
@@ -93,19 +93,23 @@ func (s *simpleModelExtractor) Extract(ctx context.Context,
 		return h, nil
 	}
 
+	if sharedMemory == nil { //means it is more performant to process body individually in each plugin in the chan than fully parsing and sharing
+		return defaultImpl()
+	}
+
 	switch sharedMem := sharedMemory.(type) {
 	case openai.ChatCompletionNewParams:
 		if len(sharedMem.Model) > 0 {
 			h[ModelHeaderKey] = string(sharedMem.Model)
 			return h, nil
 		}
-		return defaultImpl()
+		return nil, fmt.Errorf("malformed instance of shared memory type: %T", sharedMem)
 	case openai.CompletionNewParams:
 		if len(sharedMem.Model) > 0 {
 			h[ModelHeaderKey] = string(sharedMem.Model)
 			return h, nil
 		}
-		return defaultImpl()
+		return nil, fmt.Errorf("malformed instance of shared memory type: %T", sharedMem)
 	default:
 		return nil, fmt.Errorf("unsupported shared memory type: %T", sharedMem)
 	}
