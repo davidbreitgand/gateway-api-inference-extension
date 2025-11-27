@@ -81,9 +81,9 @@ func run() error {
 	// Setup runner.
 	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort,
 		*streaming,
-		*registry,
-		*requestChain,
-		*responseChain,
+		registry,
+		requestChain,
+		responseChain,
 		metaDataKeys)
 
 	// Register health server.

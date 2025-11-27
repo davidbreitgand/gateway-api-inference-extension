@@ -29,9 +29,9 @@ import (
 )
 
 func InitPlugins(setupLog logr.Logger) (
-	*framework.PluginRegistry,
-	*framework.PluginsChain,
-	*framework.PluginsChain,
+	framework.PluginRegistry,
+	framework.PluginsChain,
+	framework.PluginsChain,
 	[]string,
 	error) {
 
@@ -95,6 +95,8 @@ func InitPlugins(setupLog logr.Logger) (
 			pluginType := strings.TrimSpace(kvPair[0])
 			implementation := strings.TrimSpace(kvPair[1])
 
+			setupLog.Info("Plugin: ", "pluginType", pluginType, "implementation", implementation)
+
 			switch {
 			case pluginType == "MetadataExtractor":
 				switch {
@@ -154,5 +156,5 @@ func InitPlugins(setupLog logr.Logger) (
 		}
 	}
 
-	return &registry, &requestChain, &responseChain, metaDataKeys, nil
+	return registry, requestChain, responseChain, metaDataKeys, nil
 }
