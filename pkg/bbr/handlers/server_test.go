@@ -132,7 +132,7 @@ func TestProcessRequestBody(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
-			srv := NewServer(tc.streaming, *registry, *requestChain, *responseChain, metaDataKeys)
+			srv := NewServer(tc.streaming, registry, requestChain, responseChain, metaDataKeys)
 			//srv := NewServer(tc.streaming)
 			streamedBody := &streamedBody{}
 			for i, body := range tc.bodys {

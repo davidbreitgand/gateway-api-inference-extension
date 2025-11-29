@@ -102,12 +102,16 @@ func run() error {
 	ctx := ctrl.SetupSignalHandler()
 
 	//Initialize PluginRegistry and request/response PluginsChain instances
-	registry, requestChain, responseChain, metaDataKeys, err := bbrutils.InitPlugins(setupLog)
+	registry, requestChain, responseChain, metaDataKeys, err := bbrutils.InitPlugins()
+
 	if err != nil {
 		setupLog.Error(err, "Failed to initialize plugins")
 		return err
 	}
-	setupLog.Info("running with plugins: ", "requestChain", requestChain, "responseChain", responseChain, "metaDataKeys", metaDataKeys)
+	setupLog.Info("running with plugins: ", "requestChain", requestChain,
+		"responseChain", responseChain,
+		"metaDataKeys", metaDataKeys,
+		"registry", registry)
 
 	// Setup runner.
 	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort,

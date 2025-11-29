@@ -179,6 +179,10 @@ func (r *pluginRegistry) ContainsPlugin(typeKey string) bool {
 	return exists
 }
 
+func (r *pluginRegistry) String() string {
+	return fmt.Sprintf("{plugins=%v}{pluginsFactory=%v}", r.plugins, r.pluginsFactory)
+}
+
 //-------------------------- PluginsChain implementation --------------------------
 
 // PluginsChain is a sequence of plugins to be executed in order inside the ext_proc server
@@ -282,4 +286,8 @@ func (pc *pluginsChain) GetSharedMemory(which string) interface{} {
 		return pc.sharedChatCompletion
 	}
 	return nil
+}
+
+func (pc *pluginsChain) String() string {
+	return fmt.Sprintf("PluginsChain{plugins=%v}", pc.plugins)
 }

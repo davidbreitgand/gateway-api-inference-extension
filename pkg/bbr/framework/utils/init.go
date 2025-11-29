@@ -23,12 +23,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework"
 	bbrplugins "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework/plugins"
 )
 
-func InitPlugins(setupLog logr.Logger) (
+func InitPlugins() (
 	framework.PluginRegistry,
 	framework.PluginsChain,
 	framework.PluginsChain,
@@ -46,7 +45,7 @@ func InitPlugins(setupLog logr.Logger) (
 	// If no plugin is specified for PluginsRequestChain, then, by default, there always will be specified
 	// metadata key "model" and an instance of SimpleModelExtractor of type MetaDataExtractor will be added to the RequestPluginsChain
 	metaKeysEnv := os.Getenv("METADATA_KEYS")
-	setupLog.Info("METADATA_KEYS", "metaKeysEnv", metaKeysEnv)
+
 	if metaKeysEnv != "" {
 		metaDataKeys = strings.Split(metaKeysEnv, ",")
 		for i := range metaDataKeys {
@@ -68,14 +67,18 @@ func InitPlugins(setupLog logr.Logger) (
 		if err != nil {
 			return fmt.Errorf("failed to register an instance of %s/%s %v", pluginType, implementation, err)
 		}
-		chain.AddPlugin(pluginType, registry)
+
+		err = chain.AddPlugin(pluginType, registry)
+		if err != nil {
+			return fmt.Errorf("failed to add plugin instance %s/%s %v", pluginType, implementation, err)
+		}
 		return nil
 	}
 
 	// Helper to process plugin chains
 	processChain := func(envVar string, chain framework.PluginsChain) error {
 		configData := os.Getenv(envVar)
-		setupLog.Info("CONFIGMAP", "PluginsChain", envVar, "envVar", configData)
+
 		if configData == "" {
 			return nil // no plugins defined for this chain, but this is not an error
 		}
@@ -94,8 +97,6 @@ func InitPlugins(setupLog logr.Logger) (
 
 			pluginType := strings.TrimSpace(kvPair[0])
 			implementation := strings.TrimSpace(kvPair[1])
-
-			setupLog.Info("Plugin: ", "pluginType", pluginType, "implementation", implementation)
 
 			switch {
 			case pluginType == "MetadataExtractor":
@@ -134,7 +135,7 @@ func InitPlugins(setupLog logr.Logger) (
 	if err := processChain("REQUEST_PLUGINS_CHAIN", requestChain); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	setupLog.Info("After processing environment vars inside InitPlugins():", "REQUEST_PLUGINS_CHAIN", requestChain)
+
 	if err := processChain("RESPONSE_PLUGINS_CHAIN", responseChain); err != nil {
 		return nil, nil, nil, nil, err
 	}
