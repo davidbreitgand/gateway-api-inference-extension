@@ -80,9 +80,8 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 				if err != nil {
 					return nil, err
 				}
-				logger.V(logutil.DEFAULT).Info("Headers extracted: ", headers)    //TODO: remove
-				helpers.MergeMaps(allHeaders, headers)                            //note that the existing overlapping keys are over-written; it's the
-				logger.V(logutil.DEFAULT).Info("Headers extracted: ", allHeaders) //TODO: remove
+				helpers.MergeMaps(allHeaders, headers)                                          //note that the existing overlapping keys are NOT over-written by merge
+				logger.V(logutil.DEFAULT).Info("Headers extracted: ", "allHeaders", allHeaders) //TODO: remove
 			}
 		case "ModelSelector": //potentially mutates body; even if the body is not mutated a non-empty body that equals the original body should be returned
 			if modSelect, ok := plugin.(bbrplugins.ModelSelector); ok {
@@ -97,10 +96,10 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 				if len(mutatedBodyBytes) == 0 {
 					return nil, fmt.Errorf("empty mutated body bytes slice returned from plugin %s/%s", modSelect.TypedName().Type, modSelect.TypedName().Name)
 				}
-				helpers.MergeMaps(allHeaders, headers) //note that the existing keys are NOT over-written
+				helpers.MergeMaps(allHeaders, headers) //note that the existing keys are NOT over-written by this implementation of merge
 			}
 		default:
-			logger.V(logutil.DEFAULT).Info("Unknown plugin type %s", pluginType)
+			logger.V(logutil.DEFAULT).Info("unknown plugin type", "pluginType", pluginType)
 		}
 	}
 	//At this point, we have all the headers and a mutated body (note that actually, the body might not be mutated, but we do not care)
@@ -109,9 +108,12 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 
 	// process headers
 	Model := allHeaders[bbrplugins.ModelHeader] //it is required that the ModelHeader is always set (i.e., that there always exist requestPluginsChain with at least one plugin that sets the model header)
+
+	logger.V(logutil.DEFAULT).Info("model extracted from request body", "model", Model)
+
 	if Model == "" {
 		metrics.RecordModelNotInBodyCounter()
-		logger.V(logutil.DEFAULT).Info("Request body does not contain model parameter")
+
 		if s.streaming {
 			ret = append(ret, &eppb.ProcessingResponse{
 				Response: &eppb.ProcessingResponse_RequestHeaders{
@@ -153,6 +155,9 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 			},
 		})
 		ret = addStreamedBodyResponse(ret, mutatedBodyBytes)
+
+		logger.V(logutil.DEFAULT).Info("RESPONSE", "response", helpers.PrettyPrintResponses(ret))
+
 		return ret, nil
 	}
 
@@ -185,7 +190,7 @@ func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte)
 	}, nil
 }
 
-func addStreamedBodyResponse(responses []*eppb.ProcessingResponse, requestBodyBytes []byte) []*eppb.ProcessingResponse {
+func addStreamedBodyResponse(responses []*eppb.ProcessingResponse, mutatedBodyBytes []byte) []*eppb.ProcessingResponse {
 	return append(responses, &eppb.ProcessingResponse{
 		Response: &eppb.ProcessingResponse_RequestBody{
 			RequestBody: &eppb.BodyResponse{
@@ -193,7 +198,7 @@ func addStreamedBodyResponse(responses []*eppb.ProcessingResponse, requestBodyBy
 					BodyMutation: &eppb.BodyMutation{
 						Mutation: &eppb.BodyMutation_StreamedResponse{
 							StreamedResponse: &eppb.StreamedBodyResponse{
-								Body:        requestBodyBytes,
+								Body:        mutatedBodyBytes,
 								EndOfStream: true,
 							},
 						},

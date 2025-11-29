@@ -33,8 +33,6 @@ import (
 
 // ------------------------------------ SAMPLE PLUGIN IMPLEMENTATION ----------------------------------------------
 
-const ModelHeaderKey = "model"
-
 type simpleModelExtractor struct { //implements the MetadataExtractor interface
 	typedName           plugins.TypedName
 	requiresFullParsing bool
@@ -89,7 +87,7 @@ func (s *simpleModelExtractor) Extract(ctx context.Context,
 		if err := json.Unmarshal(requestBodyBytes, &requestBody); err != nil {
 			return nil, err
 		}
-		h[ModelHeaderKey] = requestBody.Model
+		h[ModelHeader] = requestBody.Model
 		return h, nil
 	}
 
@@ -100,17 +98,21 @@ func (s *simpleModelExtractor) Extract(ctx context.Context,
 	switch sharedMem := sharedMemory.(type) {
 	case openai.ChatCompletionNewParams:
 		if len(sharedMem.Model) > 0 {
-			h[ModelHeaderKey] = string(sharedMem.Model)
+			h[ModelHeader] = string(sharedMem.Model)
 			return h, nil
 		}
 		return nil, fmt.Errorf("malformed instance of shared memory type: %T", sharedMem)
 	case openai.CompletionNewParams:
 		if len(sharedMem.Model) > 0 {
-			h[ModelHeaderKey] = string(sharedMem.Model)
+			h[ModelHeader] = string(sharedMem.Model)
 			return h, nil
 		}
 		return nil, fmt.Errorf("malformed instance of shared memory type: %T", sharedMem)
 	default:
 		return nil, fmt.Errorf("unsupported shared memory type: %T", sharedMem)
 	}
+}
+
+func (s *simpleModelExtractor) String() string {
+	return fmt.Sprintf(("BBRPlugin{%v/requiresFullParsing=%v}"), s.TypedName(), s.requiresFullParsing)
 }

@@ -40,6 +40,7 @@ type PluginRegistry interface {
 	CreatePlugin(typeKey string) (bbrplugins.BBRPlugin, error)
 	ContainsFactory(typeKey string) bool
 	ContainsPlugin(typeKey string) bool
+	String() string
 	Clear()
 }
 
@@ -56,6 +57,7 @@ type PluginsChain interface {
 	GetSharedChatCompletion() openai.ChatCompletionNewParams
 	GetSharedCompletion() openai.CompletionNewParams
 	GetSharedMemory(which string) interface{}
+	String() string
 }
 
 // ------------------------- Supported plugin interfaces -----------------------------------------
