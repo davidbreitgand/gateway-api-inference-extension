@@ -34,3 +34,7 @@ site
 
 # MacOS generated files
 **/.DS_Store
+
+#Temporary files and caches
+.kube
+Library

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "body-based-routing.fullname" . }}-plugins-config
+  labels:
+    app.kubernetes.io/name: {{ include "body-based-routing.name" . }}
+    helm.sh/chart: {{ include "body-based-routing.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  REQUEST_PLUGINS_CHAIN: |
+{{- range .Values.plugins.requestChain }}
+    {{ .type }}:{{ .name }}
+{{- end }}
+
+  RESPONSE_PLUGINS_CHAIN: |
+{{- range .Values.plugins.responseChain }}
+    {{ .type }}:{{ .name }}
+{{- end }}
+
+  METADATA_KEYS: |
+{{ join "," .Values.plugins.metaDataKeys | nindent 4 }}

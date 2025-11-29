@@ -25,6 +25,9 @@ spec:
         - containerPort: {{ .Values.bbr.port }}
         # health check
         - containerPort: {{ .Values.bbr.healthCheckPort }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "body-based-routing.fullname" . }}-plugins-config
 ---
 apiVersion: v1
 kind: Service

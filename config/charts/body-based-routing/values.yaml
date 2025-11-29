@@ -14,3 +14,19 @@ provider:
 
 inferenceGateway:
   name: inference-gateway
+
+plugins:
+  requestChain:
+#    - type: ModelSelector
+#      name: semantic-model-selector
+    - type: MetadataExtractor 
+      name: simple-model-extractor
+
+  responseChain:
+#    - type: GuardRail
+#      name: pid-disclosure-blocker
+
+  metaDataKeys:
+    - model
+#  - temperature
+#  - max_tokens
