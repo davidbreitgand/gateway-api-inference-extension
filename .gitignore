@@ -34,3 +34,5 @@ site
 
 # MacOS generated files
 **/.DS_Store
+.kube
+Library

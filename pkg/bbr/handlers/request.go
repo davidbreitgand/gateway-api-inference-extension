@@ -18,29 +18,25 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 
 	basepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	eppb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/openai/openai-go/v3" // imported as openai
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/metrics"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/epp/util/logging"
 )
 
 const modelHeader = "X-Gateway-Model-Name"
 
-type RequestBody struct {
-	Model string `json:"model"`
-}
-
 // HandleRequestBody handles request bodies.
 func (s *Server) HandleRequestBody(ctx context.Context, requestBodyBytes []byte) ([]*eppb.ProcessingResponse, error) {
 	logger := log.FromContext(ctx)
 	var ret []*eppb.ProcessingResponse
 
-	var requestBody RequestBody
-	if err := json.Unmarshal(requestBodyBytes, &requestBody); err != nil {
+	var requestBody openai.ChatCompletionNewParams
+	if err := requestBody.UnmarshalJSON(requestBodyBytes); err != nil {
 		metrics.RecordModelNotParsedCounter()
 		return nil, err
 	}
