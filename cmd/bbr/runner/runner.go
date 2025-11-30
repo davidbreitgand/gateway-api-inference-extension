@@ -32,6 +32,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"sigs.k8s.io/gateway-api-inference-extension/internal/runnable"
+	bbrutils "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework/utils"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/metrics"
 	runserver "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/server"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/epp/util/logging"
@@ -112,9 +113,9 @@ func (r *Runner) Run(ctx context.Context) error {
 	// Setup runner.
 	serverRunner := runserver.NewDefaultExtProcServerRunner(*grpcPort,
 		*streaming,
-		*registry,
-		*requestChain,
-		*responseChain,
+		registry,
+		requestChain,
+		responseChain,
 		metaDataKeys)
 
 	// Register health server.
