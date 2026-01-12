@@ -48,7 +48,7 @@ func (h *bbrHandle) Context() context.Context {
 
 // bbrHandlePlugin implements HandlePlugin APIs to work with an instantiated plugin
 type bbrHandlePlugin struct {
-	plugin BBRPlugin
+	plugins map[string]BBRPlugin
 }
 
 // AddBBRPlugin adds an instance of BBRPlugin. In this implementation, only one plugin instance can be added.
