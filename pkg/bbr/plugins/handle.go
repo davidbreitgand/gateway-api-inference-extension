@@ -59,7 +59,7 @@ func (h *bbrHandlePlugin) AddBBRPlugin(name string, plugin BBRPlugin) {
 // GetBBRPlugin gets an instance of BBRPlugin
 // The caller should always check for nil. There is no validly nil condition.
 func (h *bbrHandlePlugin) GetBBRPlugin(name string) BBRPlugin {
-	return h.plugin
+	return h.plugins[name]
 }
 
 // Constructor for bbrHandle
