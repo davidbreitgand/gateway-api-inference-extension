@@ -39,5 +39,5 @@ type BBRPlugin interface {
 	// A plugin implementation of "semantic-model-selector" sets X-Gateway-Model-Name to any valid
 	// model name from the inventory of the backend models and also mutates the body accordingly
 	// If the body is not mutated, the original request body MUST be returned.
-	SetHeadersAndBody(requestBodyBytes []byte, requestHeaders map[string][]string) (headers map[string][]string, mutatedBodyBytes []byte, err error)
+	MutateHeadersAndBody(requestBodyBytes []byte, requestHeaders map[string][]string) (headers map[string][]string, mutatedBodyBytes []byte, err error)
 }
