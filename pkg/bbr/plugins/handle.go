@@ -51,7 +51,7 @@ type bbrHandlePlugin struct {
 	plugins map[string]BBRPlugin
 }
 
-// AddBBRPlugin adds an instance of BBRPlugin. In this implementation, only one plugin instance can be added.
+// AddBBRPlugin adds an instance of BBRPlugin.
 func (h *bbrHandlePlugin) AddBBRPlugin(name string, plugin BBRPlugin) {
 	h.plugin = plugin
 }
