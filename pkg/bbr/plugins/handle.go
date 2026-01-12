@@ -53,7 +53,10 @@ type bbrHandlePlugin struct {
 
 // AddBBRPlugin adds an instance of BBRPlugin.
 func (h *bbrHandlePlugin) AddBBRPlugin(name string, plugin BBRPlugin) {
-	h.plugin = plugin
+	if h.plugins == nil {
+		h.plugins = make(map[string]BBRPlugin)
+	}
+	h.plugins[name] = plugin
 }
 
 // GetBBRPlugin gets an instance of BBRPlugin
