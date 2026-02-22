@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/datastore"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/metrics"
-	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/plugins"
+	plugins "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/plugins"
 	runserver "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/server"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/common/observability/logging"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/common/observability/profiling"
@@ -162,13 +162,18 @@ func (r *Runner) Run(ctx context.Context) error {
 		setupLog.Info("No BBR plugins are specified. Running BBR with the default behavior.")
 
 		// Append a default BBRPlugin to the slice of the BBRPlugin instances using regular registered factory mechanism.
-		factory := framework.Registry[plugins.DefaultPluginType]
+		factory := framework.Registry[plugins.ModelExtractorType]
 		defaultPlugin, err := factory("", nil)
 		if err != nil {
-			setupLog.Error(err, "Failed to create default plugin")
+			setupLog.Error(err, "Failed to create plugin", "pluginType", plugins.ModelExtractorType)
 			return err
 		}
-		r.requestPlugins = append(r.requestPlugins, defaultPlugin)
+		// Type assert to concrete type to call WithDataStore method.
+		if plugin, ok := defaultPlugin.(*plugins.ModelExtractorPlugin); ok {
+			// Set the DataStore for the ModelExtractorPlugin.
+			plugin.WithDatastore(ds)
+			r.requestPlugins = append(r.requestPlugins, defaultPlugin)
+		}
 	} else {
 		setupLog.Info("BBR plugins are specified. Running BBR with the specified plugins.")
 
@@ -223,7 +228,7 @@ func (r *Runner) Run(ctx context.Context) error {
 
 // registerInTreePlugins registers the factory functions of all known BBR plugins
 func (r *Runner) registerInTreePlugins() {
-	framework.Register(plugins.DefaultPluginType, plugins.DefaultPluginFactory)
+	framework.Register(plugins.ModelExtractorType, plugins.ModelExtractorPluginFactory)
 }
 
 // registerHealthServer adds the Health gRPC server as a Runnable to the given manager.
