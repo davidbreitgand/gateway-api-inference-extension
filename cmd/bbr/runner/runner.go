@@ -224,6 +224,7 @@ func (r *Runner) Run(ctx context.Context) error {
 // registerInTreePlugins registers the factory functions of all known BBR plugins
 func (r *Runner) registerInTreePlugins() {
 	framework.Register(plugins.DefaultPluginType, plugins.DefaultPluginFactory)
+	framework.Register(plugins.BodyFieldToHeaderPluginType, plugins.BodyFieldToHeaderPluginFactory)
 }
 
 // registerHealthServer adds the Health gRPC server as a Runnable to the given manager.
