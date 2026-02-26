@@ -109,8 +109,7 @@ func (p *BodyFieldToHeaderPlugin) WithName(name string) *BodyFieldToHeaderPlugin
 	return p
 }
 
-// Execute extracts values from the request body based on the configured field mappings and sets them as response headers.
-// The method handles missing fields gracefully by skipping them without error.
+// Execute extracts value from a given body field and sets it as HTTP header.
 func (p *BodyFieldToHeaderPlugin) Execute(ctx context.Context, headers map[string]string, body map[string]any) (map[string]string, map[string]any, error) {
 	// Create a new headers map with only the extracted values from the body
 	updatedHeaders := make(map[string]string, len(p.headerToFieldMap))
