@@ -33,27 +33,7 @@ const (
 // compile-time type validation
 var _ framework.PayloadProcessor = &BodyFieldToHeaderPlugin{}
 
-// BodyFieldToHeaderPlugin extracts values from request body fields and sets them as HTTP headers.
-// All headers are treated as custom headers.
-//
-// Configuration of the plugin is done via CLI flag: --plugin <type>:<name>:<json>
-// Example:
-//
-//	--plugin body-field-to-header:my-field-extractor:'{"headers":{"X-Model-Name":"model","X-Provider":"provider","Some-Header":"some_field"}}'
-//
-// Where:
-//   - "body-field-to-header" is the plugin type (BodyFieldToHeaderPluginType constant)
-//   - "my-field-extractor" is the plugin instance name that can be any string
-//   - The JSON object defines the field-to-header mappings
-//
-// If the request body contains:
-//
-//	{"model": "gpt-4", "provider": "openai", "some_field": "some-value"}
-//
-// The plugin will set headers exactly as configured:
-//   - X-Model-Name: gpt-4
-//   - X-Provider: openai
-//   - Some-Header: some-value
+// BodyFieldToHeaderPlugin extracts value from a given body field and sets it as HTTP header.
 type BodyFieldToHeaderPlugin struct {
 	typedName plugin.TypedName
 	// headerToFieldMap maps header names to body field names
