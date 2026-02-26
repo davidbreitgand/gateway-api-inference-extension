@@ -35,15 +35,17 @@ var _ framework.PayloadProcessor = &BodyFieldToHeaderPlugin{}
 
 // BodyFieldToHeaderPlugin extracts value from a given body field and sets it as HTTP header.
 type BodyFieldToHeaderPlugin struct {
-	typedName plugin.TypedName
-	// headerToFieldMap maps header names to body field names
-	headerToFieldMap map[string]string
+	typedName  plugin.TypedName
+	fieldName  string
+	headerName string
 }
 
 // BodyFieldToHeaderConfig defines the JSON configuration structure for the plugin.
 type BodyFieldToHeaderConfig struct {
-	// Headers maps header names to body field names
-	Headers map[string]string `json:"headers"`
+	// FieldName is the name of the body field to extract
+	FieldName string `json:"field_name"`
+	// HeaderName is the name of the header to set
+	HeaderName string `json:"header_name"`
 }
 
 // BodyFieldToHeaderPluginFactory creates a new BodyFieldToHeaderPlugin instance from JSON configuration.
@@ -56,25 +58,27 @@ func BodyFieldToHeaderPluginFactory(name string, rawParameters json.RawMessage) 
 		}
 	}
 
-	if len(config.Headers) == 0 {
-		return nil, errors.New("BodyFieldToHeader plugin requires at least one header mapping in configuration")
+	if config.FieldName == "" {
+		return nil, errors.New("BodyFieldToHeader plugin requires field_name in configuration")
 	}
 
-	return NewBodyFieldToHeaderPlugin(name, config.Headers), nil
+	if config.HeaderName == "" {
+		// Create a default header name based on the field name
+		config.HeaderName = "X-Gateway-" + config.FieldName
+	}
+
+	return NewBodyFieldToHeaderPlugin(config.FieldName, config.HeaderName).WithName(name), nil
 }
 
 // NewBodyFieldToHeaderPlugin creates a new BodyFieldToHeaderPlugin with the given configuration.
-func NewBodyFieldToHeaderPlugin(name string, headerToFieldMap map[string]string) *BodyFieldToHeaderPlugin {
-	if name == "" {
-		name = BodyFieldToHeaderPluginType
-	}
-
+func NewBodyFieldToHeaderPlugin(fieldName, headerName string) *BodyFieldToHeaderPlugin {
 	return &BodyFieldToHeaderPlugin{
 		typedName: plugin.TypedName{
 			Type: BodyFieldToHeaderPluginType,
-			Name: name,
+			Name: BodyFieldToHeaderPluginType,
 		},
-		headerToFieldMap: headerToFieldMap,
+		fieldName:  fieldName,
+		headerName: headerName,
 	}
 }
 
@@ -91,30 +95,28 @@ func (p *BodyFieldToHeaderPlugin) WithName(name string) *BodyFieldToHeaderPlugin
 
 // Execute extracts value from a given body field and sets it as HTTP header.
 func (p *BodyFieldToHeaderPlugin) Execute(ctx context.Context, headers map[string]string, body map[string]any) (map[string]string, map[string]any, error) {
-	// Create a new headers map with only the extracted values from the body
-	updatedHeaders := make(map[string]string, len(p.headerToFieldMap))
+	// Create a new headers map with a single extracted value from the body
+	updatedHeaders := make(map[string]string, 1)
 
-	// Extract field values from body and set them as headers
-	for headerName, fieldName := range p.headerToFieldMap {
-		fieldValue, exists := body[fieldName]
-		// Missing body fields are skipped and header is not set
-		if !exists {
-			continue
-		}
-
-		// Extract string value - body fields can be strings, numbers, booleans, etc.
-		// Use type assertion for strings, fmt.Sprintf for other types
-		var headerValue string
-		if str, ok := fieldValue.(string); ok {
-			headerValue = str
-		} else {
-			// Convert non-string types (numbers, booleans, etc.) to string
-			headerValue = fmt.Sprintf("%v", fieldValue)
-		}
-
-		// Set the header value exactly as configured
-		updatedHeaders[headerName] = headerValue
+	// Extract field value from body
+	fieldValue, exists := body[p.fieldName]
+	if !exists {
+		// Field doesn't exist in body, return empty headers map
+		return updatedHeaders, body, nil
 	}
+
+	// Extract string value - body fields can be strings, numbers, booleans, etc.
+	// Use type assertion for strings, fmt.Sprintf for other types
+	var headerValue string
+	if str, ok := fieldValue.(string); ok {
+		headerValue = str
+	} else {
+		// Convert non-string types (numbers, booleans, etc.) to string
+		headerValue = fmt.Sprintf("%v", fieldValue)
+	}
+
+	// Set the header value
+	updatedHeaders[p.headerName] = headerValue
 
 	// Return updated headers and unchanged body
 	return updatedHeaders, body, nil
