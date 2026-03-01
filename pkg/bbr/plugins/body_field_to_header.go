@@ -95,8 +95,6 @@ func (p *BodyFieldToHeaderPlugin) WithName(name string) *BodyFieldToHeaderPlugin
 
 // Execute extracts value from a given body field and sets it as HTTP header.
 func (p *BodyFieldToHeaderPlugin) Execute(ctx context.Context, headers map[string]string, body map[string]any) (map[string]string, map[string]any, error) {
-	// Create a new headers map with a single extracted value from the body
-	updatedHeaders := make(map[string]string, 1)
 
 	// Extract field value from body
 	fieldValue, exists := body[p.fieldName]
