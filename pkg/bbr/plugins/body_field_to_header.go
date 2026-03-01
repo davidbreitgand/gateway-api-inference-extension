@@ -28,6 +28,7 @@ import (
 
 const (
 	BodyFieldToHeaderPluginType = "body-field-to-header"
+	deafultHeaderPrefix         = "X-Gateway-"
 )
 
 // compile-time type validation
@@ -64,7 +65,7 @@ func BodyFieldToHeaderPluginFactory(name string, rawParameters json.RawMessage) 
 
 	if config.HeaderName == "" {
 		// Create a default header name based on the field name
-		config.HeaderName = "X-Gateway-" + config.FieldName
+		config.HeaderName = deafultHeaderPrefix + config.FieldName
 	}
 
 	return NewBodyFieldToHeaderPlugin(config.FieldName, config.HeaderName).WithName(name), nil
@@ -95,14 +96,21 @@ func (p *BodyFieldToHeaderPlugin) WithName(name string) *BodyFieldToHeaderPlugin
 
 // Execute extracts value from a given body field and sets it as HTTP header.
 func (p *BodyFieldToHeaderPlugin) Execute(ctx context.Context, headers map[string]string, body map[string]any) (map[string]string, map[string]any, error) {
+	if headers == nil {
+		return headers, body, errors.New("headers map is nil")
+	}
+	if body == nil {
+		return headers, body, errors.New("body map is nil")
+	}
 
 	// Extract field value from body
 	fieldValue, exists := body[p.fieldName]
 	if !exists {
-		// Field doesn't exist in body, return empty headers map
-		return updatedHeaders, body, nil
+		// Field doesn't exist in body, return headers map unchanged
+		return headers, body, nil
 	}
 
 	headers[p.headerName] = fmt.Sprintf("%v", fieldValue)
 
 	return headers, body, nil
+}
