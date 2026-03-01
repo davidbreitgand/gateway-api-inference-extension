@@ -105,19 +105,6 @@ func (p *BodyFieldToHeaderPlugin) Execute(ctx context.Context, headers map[strin
 		return updatedHeaders, body, nil
 	}
 
-	// Extract string value - body fields can be strings, numbers, booleans, etc.
-	// Use type assertion for strings, fmt.Sprintf for other types
-	var headerValue string
-	if str, ok := fieldValue.(string); ok {
-		headerValue = str
-	} else {
-		// Convert non-string types (numbers, booleans, etc.) to string
-		headerValue = fmt.Sprintf("%v", fieldValue)
-	}
+	headers[p.headerName] = fmt.Sprintf("%v", fieldValue)
 
-	// Set the header value
-	updatedHeaders[p.headerName] = headerValue
-
-	// Return updated headers and unchanged body
-	return updatedHeaders, body, nil
-}
+	return headers, body, nil
