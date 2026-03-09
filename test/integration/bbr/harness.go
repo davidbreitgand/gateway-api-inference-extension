@@ -23,11 +23,16 @@ import (
 	extProcPb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/datastore"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/framework"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/handlers"
 	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/plugins"
+	"sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/plugins/basemodelextractor"
 	runserver "sigs.k8s.io/gateway-api-inference-extension/pkg/bbr/server"
 	logutil "sigs.k8s.io/gateway-api-inference-extension/pkg/common/observability/logging"
 	"sigs.k8s.io/gateway-api-inference-extension/test/integration"
@@ -54,14 +59,61 @@ func NewBBRHarness(t *testing.T, ctx context.Context, streaming bool) *BBRHarnes
 	port, err := integration.GetFreePort()
 	require.NoError(t, err, "failed to acquire free port for BBR server")
 
-	// 2. Configure BBR Server
+	// 2. Configure BBR Server with both plugins
 	runner := runserver.NewDefaultExtProcServerRunner(port, false)
 	runner.SecureServing = false
 	runner.Streaming = streaming
-	runner.Datastore = datastore.NewDatastore()
+
+	// Create BodyFieldToHeaderPlugin for X-Gateway-Model-Name
 	modelToHeaderPlugin, err := plugins.NewBodyFieldToHeaderPlugin(handlers.ModelField, handlers.ModelHeader)
 	require.NoError(t, err, "failed to create body-field-to-header plugin")
-	runner.RequestPlugins = []framework.RequestProcessor{modelToHeaderPlugin}
+
+	// Create BaseModelToHeaderPlugin for X-Gateway-Base-Model-Name
+	baseModelPlugin := basemodelextractor.NewBaseModelToHeaderPlugin()
+
+	// Configure the base model plugin with test data
+	// Create a test ConfigMap with model mappings
+	testConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-model-mappings",
+			Namespace: "default",
+		},
+		Data: map[string]string{
+			"baseModel": "llama",
+			"adapters": `
+- llama
+- sql-lora-sheddable
+- foo
+`,
+		},
+	}
+
+	// Get the reconciler from the plugin and set it up with a fake manager
+	reconciler := baseModelPlugin.GetReconciler()
+
+	// Create a fake client with the test ConfigMap
+	fakeClient := fake.NewClientBuilder().
+		WithObjects(testConfigMap).
+		Build()
+
+	// Set the Reader on the reconciler
+	reconciler.Reader = fakeClient
+
+	// Call Reconcile() to update the adapters store with test data
+	req := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: testConfigMap.Namespace,
+			Name:      testConfigMap.Name,
+		},
+	}
+	_, err = reconciler.Reconcile(ctx, req)
+	require.NoError(t, err, "failed to configure base model plugin with test data via Reconcile")
+
+	// Register both plugins
+	runner.RequestPlugins = []framework.RequestProcessor{
+		modelToHeaderPlugin,
+		baseModelPlugin,
+	}
 
 	// 3. Start Server in Background
 	serverCtx, serverCancel := context.WithCancel(ctx)

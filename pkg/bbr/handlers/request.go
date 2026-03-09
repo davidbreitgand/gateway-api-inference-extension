@@ -61,10 +61,7 @@ func (s *Server) HandleRequestBody(ctx context.Context, reqCtx *RequestContext, 
 		return ret, nil
 	}
 
-	// TODO temp until this is implemented as plugin
-	baseModel := s.ds.GetBaseModel(reqCtx.Request.Headers[ModelHeader])
-	reqCtx.Request.SetHeader(BaseModelHeader, baseModel)
-	logger.Info("Base model from datastore", "baseModel", baseModel)
+	// Base model extraction is now handled by the BaseModelToHeaderPlugin
 
 	// TODO: check and do this only if the request body actually changed.
 	mutatedBodyBytes, err := json.Marshal(reqCtx.Request.Body)

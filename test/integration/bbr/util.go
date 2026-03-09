@@ -27,9 +27,8 @@ import (
 // --- Response Expectations (Streaming) ---
 
 // ExpectBBRHeader asserts that BBR set the specific model header and cleared the route cache.
-func ExpectBBRHeader(modelName, prompt string) *extProcPb.ProcessingResponse {
-	b := marshalExpectedBody(prompt, modelName)
-
+// baseModelName is the expected base model name (e.g., "llama" for both "llama" and "sql-lora-sheddable")
+func ExpectBBRHeader(modelName, baseModelName string, contentLength string) *extProcPb.ProcessingResponse {
 	return &extProcPb.ProcessingResponse{
 		Response: &extProcPb.ProcessingResponse_RequestHeaders{
 			RequestHeaders: &extProcPb.HeadersResponse{
@@ -40,19 +39,19 @@ func ExpectBBRHeader(modelName, prompt string) *extProcPb.ProcessingResponse {
 							{
 								Header: &envoyCorev3.HeaderValue{
 									Key:      "Content-Length",
-									RawValue: []byte(strconv.Itoa(len(b))),
+									RawValue: []byte(contentLength),
+								},
+							},
+							{
+								Header: &envoyCorev3.HeaderValue{
+									Key:      "X-Gateway-Base-Model-Name",
+									RawValue: []byte(baseModelName),
 								},
 							},
 							{
 								Header: &envoyCorev3.HeaderValue{
 									Key:      "X-Gateway-Model-Name",
 									RawValue: []byte(modelName),
-								},
-							},
-							{
-								Header: &envoyCorev3.HeaderValue{
-									Key:      "X-Gateway-Base-Model-Name",
-									RawValue: []byte(""),
 								},
 							},
 						},
@@ -104,7 +103,8 @@ func ExpectBBRNoOpHeader() *extProcPb.ProcessingResponse {
 // --- Response Expectations (Unary) ---
 
 // ExpectBBRUnaryResponse creates expected response for unary tests where the body is mutated directly.
-func ExpectBBRUnaryResponse(modelName, prompt string) *extProcPb.ProcessingResponse {
+// baseModelName is the expected base model name (e.g., "llama" for both "llama" and "sql-lora-sheddable")
+func ExpectBBRUnaryResponse(modelName, baseModelName string, prompt string) *extProcPb.ProcessingResponse {
 	resp := &extProcPb.ProcessingResponse{}
 
 	// If modelName is present, we expect header mutations and body mutation.
@@ -132,7 +132,7 @@ func ExpectBBRUnaryResponse(modelName, prompt string) *extProcPb.ProcessingRespo
 							{
 								Header: &envoyCorev3.HeaderValue{
 									Key:      "X-Gateway-Base-Model-Name",
-									RawValue: []byte(""),
+									RawValue: []byte(baseModelName),
 								},
 							},
 						},
