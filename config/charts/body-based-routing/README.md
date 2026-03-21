@@ -45,6 +45,29 @@ bbr:
     ...
 ```
 
+### BBR plugins
+
+Two BBR plugins are created and initialized by default (in that order).
+
+- `body-field-to-header`: the plugin extracts any specified body field to a specified header. By default, the `model` field is extracted to `X-Gateway-Model-Name`.
+- `base-model-to-header`: the plugin extracts the `model` field to `X-Gateway-Base-Model-Name`
+
+One can configure the plugins in the `values.yaml` file:
+
+```yaml
+bbr:
+  plugins:
+    - type: body-field-to-header
+      name: model-extractor
+      json:
+        field_name: model
+        header_name: X-Gateway-Model-Name
+    - type: base-model-to-header
+      name: base-model-mapper
+```
+
+The names of the plugin instances, the body field names, and the headers can be configured arbitrarily for the known plugin types. The plugin instances execute in the order of specification.
+
 ## Uninstall
 
 Run the following command to uninstall the chart:
@@ -63,15 +86,17 @@ The following table list the configurable parameters of the chart.
 | `bbr.replicas`               | Number of replicas for the deployment. Defaults to `1`.                                                           |
 | `bbr.port`                   | Port serving ext_proc. Defaults to `9004`.                                                                        |
 | `bbr.healthCheckPort`        | Port for health checks. Defaults to `9005`.                                                                       |
-| `bbr.multiNamespace`         | Boolean flag to indicate whether BBR should watch cross namesapce configmaps or only within the namespace it is deployed.
-Defaults to `false`.                                                                       |
+| `bbr.multiNamespace`         | Boolean flag to indicate whether BBR should watch cross namesapce configmaps or only within the namespace it is deployed. Defaults to `false`.                                                                       |
 | `bbr.image.name`             | Name of the container image used.                                                                                 |
 | `bbr.image.hub`              | Registry URL where the image is hosted.                                                                           | 
 | `bbr.image.tag`              | Image tag.                                                                                                        |
 | `bbr.image.pullPolicy`       | Image pull policy for the container. Possible values: `Always`, `IfNotPresent`, or `Never`. Defaults to `Always`. |
 | `bbr.flags`                  | map of flags which are passed through to bbr. Refer to [runner.go](https://github.com/kubernetes-sigs/gateway-api-inference-extension/blob/main/cmd/bbr/runner/runner.go) for complete list. |
+| `bbr.plugins.type`   |  Type of a plugin. Default to `body-field-to-header` and `base-model-to-header` (in that order), if no plugins specified.  |
+| `bbr.plugins.name`   |  Name of a plugin instance. Default to `body-field-to-header` and `base-model-to-header` (in that order), if no plugins are specified. |
+| `bbr.plugins.json`  | JSON specifying arbitrary key/value pairs interpreted by a plugin configuration. Defaults to `{"field_name": "model", "header_name": "X-Gateway-Model-Name"}` for `body-field-to-header` |
 | `provider.name`              | Name of the Inference Gateway implementation being used. Possible values: `istio`, `gke`. Defaults to `none`.     |
-| `inferenceGateway.name`      | The name of the Gateway. Defaults to `inference-gateway`.                                                         |                        
+| `inferenceGateway.name`      | The name of the Gateway. Defaults to `inference-gateway`.                                                                                 
 
 ## Notes
 
